@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+
 use App\Http\Resources\PostResource;
 
 class PostAPIController extends Controller
@@ -17,15 +20,22 @@ class PostAPIController extends Controller
 
 	public function storePostAPI(Request $request)
 	{
-		$imageName = time() . '.' . $request->image->extension();
-		$request->image->move(public_path('images'), $imageName);
+		$ext = explode(';base64', $request->image);
+		$ext = explode('/', $ext[0]);
+		$ext = $ext[1];
+
+		$image = str_replace('data:@image/' . $ext . ';base64,', '',  $request->image);
+		$image = str_replace(' ', '+', $image);
+		$image_name = time() . '.' . $ext;
+
+		File::put(public_path('images') . '/' . $image_name, base64_decode($image));
 
 		$post = new Post;
 		$post->user_id = 3;
 		$post->cat_id = $request->cat_id;
 		$post->title = $request->title;
 		$post->content = $request->content;
-		$post->image = asset('/images') . '/' . $imageName;
+		$post->image =  asset('/images/' . $image_name);
 		$post->save();
 		return response()->json([
 			'success' => true,
@@ -41,40 +51,41 @@ class PostAPIController extends Controller
 
 	public function updatePostAPI(Request $request)
 	{
+		// get value request 
 		$post = Post::find($request->id);
 		$post->user_id = 3;
 		$post->cat_id = $request->cat_id;
 		$post->title = $request->title;
 		$post->content = $request->content;
+
+		// check file new file image
 		if ($request->image != NULL) {
+
+			// delete old file
 			$images = explode('/', $post->image, 5);
 			$image_path = public_path('images' . '/' . $images[4]);
 			if (file_exists($image_path)) {
 				unlink($image_path);
 			}
-			$imageName = time() . '.' . $request->image->extension();
-			$request->image->move(public_path('images'), $imageName);
-			$post->image = asset('/images')  . '/' . $imageName;
+
+			// add new file
+			$ext = explode(';base64', $request->image);
+			$ext = explode('/', $ext[0]);
+			$ext = $ext[1];
+			$image = str_replace('data:@image/' . $ext . ';base64,', '',  $request->image);
+			$image = str_replace(' ', '+', $image);
+			$image_name = time() . '.' . $ext;
+			File::put(public_path('images') . '/' . $image_name, base64_decode($image));
+
+			// set image field
+			$post->image =  asset('/images/' . $image_name);
 		}
+
 		$post->save();
+
 		return response()->json([
 			'success' => true,
 			'data' => $post
-		]);
-	}
-
-	public function searchPostAPI($search)
-	{
-		$posts = Post::select('id', 'title', 'content', 'image', 'updated_at')
-			->where('content', 'like', '%' . $search . '%')->get();
-		foreach ($posts as $post) {
-			$post->content = substr($post->content, 0, 150);
-			$post->url =  asset('detail') . '/' . $post->id;
-			$post->sumber = 'Dinas Jawa Barat';
-		}
-		return response()->json([
-			'success' => 1,
-			'data' => $posts
 		]);
 	}
 

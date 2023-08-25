@@ -14,7 +14,7 @@ Data Post 
           <thead class="thead-dark">
             <tr>
               <th width="30">No</th>
-              <th width="120">Creator</th>
+              <th width="150">Creator</th>
               <th width="120">Category</th>
               <th width="240">Title</th>
               <th>Content</th>

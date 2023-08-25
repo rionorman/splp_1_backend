@@ -8,7 +8,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-use App\Http\Controllers\RabbitMQController;
+use Illuminate\Support\Facades\File;
 
 
 class PostController extends Controller
@@ -33,15 +33,26 @@ class PostController extends Controller
 			'image' => 'required|mimes:jpg,png,jpeg',
 		]);
 
-		$imageName = time() . '.' . $request->image->extension();
-		$request->image->move(public_path('images'), $imageName);
+		$image_ext = $request->image->extension();
+		$image_name = time() . '.' . $image_ext;
+		$request->image->move(public_path('images'), $image_name);
+
+		$image = 'data:@image/' . $image_ext . ';base64,' . base64_encode(file_get_contents(public_path('images/') . $image_name));
+
+		$ext = explode(';base64', $image);
+		$ext = explode('/', $ext[0]);
+		$ext = $ext[1];
+
+		$image = str_replace('data:@image/' . $image_ext . ';base64,', '', $image);
+		$image = str_replace(' ', '+', $image);
+		File::put(public_path('images') . '/' . $image_name, base64_decode($image));
 
 		$post = new Post;
 		$post->user_id = Auth::user()->id;
 		$post->cat_id = $request->cat_id;
 		$post->title = $request->title;
 		$post->content = $request->content;
-		$post->image = asset('/images') . '/' . $imageName;
+		$post->image = asset('/images') . '/' . $image_name;
 		$post->save();
 		return redirect('/post');
 	}
