@@ -32,5 +32,6 @@ Route::post('/destroyPostAPI/{id}', [PostAPIController::class, 'destroyPostAPI']
 
 Route::post('/rabbit/send', [RabbitMQController::class, 'send']);
 
-
 Route::get('/getCategoriesAPI', [CategoryAPIController::class, 'getCategories']);
+
+Route::post('/storePostAPILsg', [PostAPIController::class, 'storePostAPILsg']);
